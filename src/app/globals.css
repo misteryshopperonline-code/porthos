@@ -28,16 +28,11 @@ body {
 }
 
 .glass-panel {
-  background: rgba(24, 24, 27, 0.7);
+  @apply bg-white/80 dark:bg-zinc-900/70 border border-zinc-200 dark:border-white/5 shadow-md;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .text-gradient {
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-image: linear-gradient(to right, #f8fafc, #94a3b8);
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-zinc-700 to-zinc-900 dark:from-zinc-100 dark:to-zinc-400;
 }

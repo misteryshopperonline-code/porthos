@@ -31,7 +31,7 @@ export default async function Home() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up">
         {/* Metricas Premium */}
-        <div className="glass-panel bg-white/60 dark:bg-transparent p-6 rounded-2xl border-t border-l border-zinc-200 dark:border-white/10 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div className="glass-panel p-6 rounded-2xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <h3 className="text-zinc-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Campaña Activa</h3>
           <div className="mt-3 flex items-baseline">
             <p className="text-4xl font-black text-zinc-800 dark:text-white">{totalCommunications}</p>
@@ -42,7 +42,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="glass-panel bg-white/60 dark:bg-transparent p-6 rounded-2xl border-t border-l border-zinc-200 dark:border-white/10 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div className="glass-panel p-6 rounded-2xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <h3 className="text-zinc-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Total de Deuda</h3>
           <div className="mt-3 flex items-baseline">
             <p className="text-4xl font-black text-zinc-800 dark:text-white">{totalRecovered}</p>
@@ -53,7 +53,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="glass-panel bg-white/60 dark:bg-transparent p-6 rounded-2xl border-t border-l border-zinc-200 dark:border-white/10 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        <div className="glass-panel p-6 rounded-2xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <h3 className="text-zinc-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Acuerdos Vía IA</h3>
           <div className="mt-3 flex items-baseline">
             <p className="text-4xl font-black text-zinc-800 dark:text-white">{totalContracts}</p>
@@ -69,7 +69,7 @@ export default async function Home() {
         <h2 className="text-xl font-bold text-zinc-800 dark:text-gray-100 mb-6 flex items-center">
           <span className="w-2 h-6 bg-brand-500 rounded-full mr-3"></span> Actividad Reciente
         </h2>
-        <div className="glass-panel bg-white/60 dark:bg-transparent rounded-2xl overflow-hidden border border-zinc-200 dark:border-dark-border/50 shadow-lg dark:shadow-2xl">
+        <div className="glass-panel rounded-2xl overflow-hidden">
           <table className="min-w-full divide-y divide-zinc-200 dark:divide-dark-border">
             <thead className="bg-zinc-100 dark:bg-[#1e293b]/50">
               <tr>
