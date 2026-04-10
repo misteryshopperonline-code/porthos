@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Link from 'next/link';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,21 +26,21 @@ export default function RootLayout({
               <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider font-semibold">Cobranza Inteligente</p>
             </div>
             <nav className="px-4 mt-6 space-y-2">
-              <a href="#" className="block px-4 py-3 rounded-lg bg-brand-500/10 text-brand-500 hover:bg-brand-500/20 transition-all font-medium border border-brand-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+              <Link href="/" className="block px-4 py-3 rounded-lg bg-brand-500/10 text-brand-500 hover:bg-brand-500/20 transition-all font-medium border border-brand-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                 Dashboard
-              </a>
-              <a href="#" className="block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5">
+              </Link>
+              <Link href="/deudores" className="block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5">
                 Registro y Deudores
-              </a>
-              <a href="#" className="block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5">
+              </Link>
+              <Link href="/carga-masiva" className="block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5">
                 Carga Masiva
-              </a>
-              <a href="#" className="block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5">
+              </Link>
+              <Link href="/mensajeria" className="block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5">
                 Mensajería
-              </a>
-              <a href="#" className="block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5">
+              </Link>
+              <Link href="/contratos" className="block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5">
                 Contratos PDF
-              </a>
+              </Link>
             </nav>
           </aside>
           {/* Main content */}
