@@ -1,18 +1,26 @@
 import { PrismaClient } from '@prisma/client'
+import { BcryptPasswordService } from '../src/infrastructure/adapters/bcryptPasswordService'
 
 const prisma = new PrismaClient()
+const crypto = new BcryptPasswordService()
 
 async function main() {
   console.log('Seeding database...')
 
   // 1. Create a dummy admin user
+  const passwordHash = await crypto.hash('porthos123');
+
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@porthos.com' },
-    update: {},
+    update: {
+      passwordHash,
+      role: 'GLOBAL_ADMIN'
+    },
     create: {
       email: 'admin@porthos.com',
+      passwordHash,
       name: 'Porthos Admin',
-      role: 'ADMIN',
+      role: 'GLOBAL_ADMIN',
     },
   })
   console.log('Admin user created:', adminUser.email)
