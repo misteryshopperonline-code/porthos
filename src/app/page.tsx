@@ -1,12 +1,39 @@
+import ContractSelector from "@/components/ContractSelector";
 import prisma from "@/lib/prisma";
 
-export default async function Home() {
-  const totalCommunications = await prisma.communication.count();
-  const rawSum = await prisma.debt.aggregate({ _sum: { amount: true } });
+export default async function Home({
+  searchParams
+}: {
+  searchParams: { contractId?: string }
+}) {
+  const contractId = searchParams.contractId;
+  const debtFilter = contractId ? { contractId } : {};
+
+  // Traer todos los contratos paral dropdown
+  const contracts = await prisma.contract.findMany({
+    select: { id: true, contractCode: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Métricas con filtro aplicado (si contractId existe)
+  const totalCommunications = await prisma.communication.count({
+    where: contractId ? { debt: { contractId } } : {},
+  });
+
+  const rawSum = await prisma.debt.aggregate({
+    where: debtFilter,
+    _sum: { amount: true },
+  });
   const totalRecovered = rawSum._sum.amount ? rawSum._sum.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '$0.00';
-  const totalContracts = await prisma.contract.count();
+  
+  // Total de deudas vinculadas al contrato (si hay filtro), o conteo de contratos (si es global)
+  const metricLabel = contractId ? "Deudas Vinculadas" : "Contratos Totales";
+  const totalAcuerdos = contractId 
+    ? await prisma.debt.count({ where: debtFilter }) 
+    : await prisma.contract.count();
 
   const recentDebts = await prisma.debt.findMany({
+    where: debtFilter,
     orderBy: { createdAt: 'desc' },
     take: 5,
     include: {
@@ -20,13 +47,18 @@ export default async function Home() {
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in relative z-10">
-      <header className="mb-10">
-        <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
-          Bienvenido a <span className="text-gradient">Porthos</span>
-        </h1>
-        <p className="mt-2 text-zinc-500 dark:text-gray-400 text-lg">
-          Vista general de la recuperación de cartera y campañas activas.
-        </p>
+      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+            Bienvenido a <span className="text-gradient">Porthos</span>
+          </h1>
+          <p className="mt-2 text-zinc-500 dark:text-gray-400 text-lg">
+            Vista general de la recuperación de cartera y campañas activas.
+          </p>
+        </div>
+        <div className="md:mb-1">
+          <ContractSelector contracts={contracts} />
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up">
@@ -54,13 +86,13 @@ export default async function Home() {
         </div>
 
         <div className="glass-panel p-6 rounded-2xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <h3 className="text-zinc-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Acuerdos Vía IA</h3>
+          <h3 className="text-zinc-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">{metricLabel === "Deudas Vinculadas" ? 'Detalles de Cartera' : 'Acuerdos Vía IA'}</h3>
           <div className="mt-3 flex items-baseline">
-            <p className="text-4xl font-black text-zinc-800 dark:text-white">{totalContracts}</p>
-            <p className="ml-2 text-sm text-zinc-500 dark:text-gray-400 font-medium">Contratos</p>
+            <p className="text-4xl font-black text-zinc-800 dark:text-white">{totalAcuerdos}</p>
+            <p className="ml-2 text-sm text-zinc-500 dark:text-gray-400 font-medium">{metricLabel}</p>
           </div>
           <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-dark-border/50 text-xs text-zinc-500 dark:text-gray-500">
-            Revisados con el modelo de lectura PDF
+            {contractId ? 'Archivos y deudas rastreadas en este contrato.' : 'Revisados con el modelo de lectura PDF.'}
           </div>
         </div>
       </div>
