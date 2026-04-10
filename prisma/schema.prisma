@@ -1,0 +1,93 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Modelos basados en la estructura del dominio (Hexagonal Architecture)
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  role          String    @default("ADMIN")
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Debtor {
+  id            String      @id @default(uuid())
+  identification String     @unique
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  score         Int         @default(100)
+  debts         Debt[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Contract {
+  id            String      @id @default(uuid())
+  contractCode  String      @unique
+  documentUrl   String?     // URL del PDF si está en S3
+  conditions    Json?       // Condiciones extraídas por IA
+  debts         Debt[]
+  createdAt     DateTime    @default(now())
+}
+
+model Debt {
+  id            String      @id @default(uuid())
+  debtorId      String
+  contractId    String
+  amount        Float
+  dueDate       DateTime
+  status        String      @default("PENDING") // PENDING, PAID, DEFAULTED
+  debtor        Debtor      @relation(fields: [debtorId], references: [id])
+  contract      Contract    @relation(fields: [contractId], references: [id])
+  communications Communication[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Communication {
+  id            String    @id @default(uuid())
+  debtId        String
+  type          String    // EMAIL, WHATSAPP, SMS
+  status        String    // SENT, DELIVERED, READ, FAILED
+  content       String    @db.Text
+  sentAt        DateTime  @default(now())
+  debt          Debt      @relation(fields: [debtId], references: [id])
+}
