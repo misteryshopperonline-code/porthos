@@ -1,19 +1,24 @@
-import RegistroDeudorClient from './client-form';
+import prisma from "@/lib/prisma";
+import PortfolioManager from "./PortfolioManager";
 
-export const metadata = {
-  title: 'Registro de Deudores | Porthos'
-};
+export default async function DeudoresPage() {
+  const contracts = await prisma.contract.findMany({
+    select: { id: true, contractCode: true },
+    orderBy: { createdAt: 'desc' }
+  });
 
-export default function DeudoresPage() {
   return (
-    <div className="w-full animate-fade-in relative z-10 w-full flex flex-col items-center">
-      <header className="mb-10 text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight">
-          Gestión Operativa de <span className="text-gradient">Cartera</span>
+    <div className="max-w-7xl mx-auto animate-fade-in relative z-10 w-full">
+      <header className="mb-10">
+        <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+          Gestión de <span className="text-gradient">Portafolio</span>
         </h1>
+        <p className="mt-2 text-zinc-500 dark:text-gray-400 text-lg">
+          Registro individual y masivo de operaciones para la plataforma.
+        </p>
       </header>
-      
-      <RegistroDeudorClient />
+
+      <PortfolioManager contracts={contracts} />
     </div>
   );
 }

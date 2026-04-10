@@ -10,26 +10,33 @@ export class RegisterDebtorUseCase {
     lastName: string;
     email?: string;
     phone?: string;
+    contractId: string;
+    amount: number;
+    dueDate: Date;
   }): Promise<{ success: boolean; debtor?: Debtor; error?: string }> {
     try {
-      // Regla de Negocio: Validar si la identificación ya existe
-      const existingDebtor = await this.debtorRepository.findByIdentification(data.identification);
-      
-      if (existingDebtor) {
-        return { success: false, error: 'Un deudor con esta identificación ya está registrado.' };
+      if (!data.contractId || !data.amount || !data.dueDate) {
+        return { success: false, error: 'Información de deuda o contrato faltante.' };
       }
 
-      const debtor = await this.debtorRepository.save({
-        identification: data.identification,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email || null,
-        phone: data.phone || null,
-      });
+      const debtor = await this.debtorRepository.upsertWithDebt(
+        {
+          identification: data.identification,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email || null,
+          phone: data.phone || null,
+        },
+        {
+          contractId: data.contractId,
+          amount: data.amount,
+          dueDate: data.dueDate
+        }
+      );
 
       return { success: true, debtor };
     } catch (error: any) {
-      return { success: false, error: error.message || 'Error al registrar al deudor.' };
+      return { success: false, error: error.message || 'Error al registrar deudor y deuda.' };
     }
   }
 }

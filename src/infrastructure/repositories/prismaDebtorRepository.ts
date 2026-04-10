@@ -22,6 +22,40 @@ export class PrismaDebtorRepository implements DebtorRepositoryPort {
     return newDebtor;
   }
 
+  async upsertWithDebt(
+    debtorData: Omit<Debtor, 'id' | 'createdAt' | 'updatedAt' | 'score'>,
+    debt: { contractId: string; amount: number; dueDate: Date; }
+  ): Promise<Debtor> {
+    const upsertedDebtor = await prisma.debtor.upsert({
+      where: { identification: debtorData.identification },
+      update: {
+        firstName: debtorData.firstName,
+        lastName: debtorData.lastName,
+        email: debtorData.email,
+        phone: debtorData.phone,
+      },
+      create: {
+        identification: debtorData.identification,
+        firstName: debtorData.firstName,
+        lastName: debtorData.lastName,
+        email: debtorData.email,
+        phone: debtorData.phone,
+      }
+    });
+
+    await prisma.debt.create({
+      data: {
+        debtorId: upsertedDebtor.id,
+        contractId: debt.contractId,
+        amount: debt.amount,
+        dueDate: debt.dueDate,
+        status: 'PENDING'
+      }
+    });
+
+    return upsertedDebtor;
+  }
+
   async findById(id: string): Promise<Debtor | null> {
     return await prisma.debtor.findUnique({ where: { id } });
   }

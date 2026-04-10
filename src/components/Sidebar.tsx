@@ -6,8 +6,7 @@ import { ThemeToggle } from './ThemeToggle';
 
 const navigation = [
   { name: 'Dashboard', href: '/' },
-  { name: 'Registro y Deudores', href: '/deudores' },
-  { name: 'Carga Masiva', href: '/carga-masiva' },
+  { name: 'Gestión de Portafolio', href: '/deudores' },
   { name: 'Mensajería', href: '/mensajeria' },
   { name: 'Contratos PDF', href: '/contratos' },
 ];

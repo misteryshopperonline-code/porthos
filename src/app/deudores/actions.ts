@@ -14,10 +14,16 @@ export async function createDebtorAction(prevState: any, formData: FormData) {
   const lastName = formData.get('lastName') as string;
   const email = formData.get('email') as string;
   const phone = formData.get('phone') as string;
+  const contractId = formData.get('contractId') as string;
+  const amountStr = formData.get('amount') as string;
 
-  if (!identification || !firstName || !lastName) {
-    return { error: 'La identificación, nombre y apellidos son requeridos.' };
+  if (!identification || !firstName || !lastName || !contractId || !amountStr) {
+    return { error: 'La identificación, nombre, contrato y monto son requeridos.' };
   }
+
+  const amount = parseFloat(amountStr);
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 30); // Default 30 días para vencimiento
 
   const result = await registerDebtorUseCase.execute({
     identification,
@@ -25,6 +31,9 @@ export async function createDebtorAction(prevState: any, formData: FormData) {
     lastName,
     email,
     phone,
+    contractId,
+    amount,
+    dueDate
   });
 
   if (!result.success) {
