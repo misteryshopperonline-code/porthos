@@ -102,7 +102,7 @@ export default async function Home() {
                     <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-400">
                       {latestComm ? (
                         <div className="flex items-center">
-                          <span className={`w-2 h-2 rounded-full mr-2 ${latestComm.status === 'SENT' || latestComm.status === 'DELIVERED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-blue-500'}`}></span>
+                          <span className={`w-2 h-2 rounded-full mr-2 ${latestComm.status === 'SENT' || latestComm.status === 'DELIVERED' ? 'bg-green-500 shadow-sm' : 'bg-blue-500'}`}></span>
                           {latestComm.type} - {latestComm.status}
                         </div>
                       ) : (

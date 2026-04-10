@@ -23,7 +23,6 @@ export default function RootLayout({
           <Sidebar />
           {/* Main content */}
           <main className="flex-1 overflow-y-auto overflow-x-hidden pt-8 px-6 pb-8 bg-dark-bg relative">
-             <div className="absolute top-[-50%] left-[-10%] w-96 h-96 bg-brand-500/20 rounded-full blur-[120px] pointer-events-none"></div>
              {children}
           </main>
         </div>

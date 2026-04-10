@@ -31,7 +31,7 @@ export default function Sidebar() {
               href={item.href} 
               className={
                 isActive 
-                  ? "block px-4 py-3 rounded-lg bg-brand-500/10 text-brand-500 transition-all font-medium border border-brand-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                  ? "block px-4 py-3 rounded-lg bg-brand-500/10 text-brand-500 transition-all font-medium border border-brand-500/20 shadow-sm"
                   : "block px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-gray-100 transition-all hover:pl-5"
               }
             >
