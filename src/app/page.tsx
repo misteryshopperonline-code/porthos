@@ -9,7 +9,6 @@ export default async function Home({
   const { contractId } = await searchParams;
   const debtFilter = contractId ? { contractId } : {};
 
-  // Traer todos los contratos paral dropdown
   const contracts = await prisma.contract.findMany({
     select: { id: true, contractCode: true },
     orderBy: { createdAt: 'desc' },
