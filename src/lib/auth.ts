@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaUserRepository } from "@/infrastructure/repositories/prismaUserRepository";
 import { BcryptPasswordService } from "@/infrastructure/adapters/bcryptPasswordService";
 import { LoginUserUseCase } from "@/application/useCases/loginUserUseCase";
+import { authSecret } from "@/lib/authSecret";
 
 const userRepository = new PrismaUserRepository();
 const cryptoService = new BcryptPasswordService();
@@ -60,5 +61,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login', 
   },
-  secret: process.env.NEXTAUTH_SECRET || "default_super_secret_for_dev_b4_vercel"
+  secret: authSecret
 };

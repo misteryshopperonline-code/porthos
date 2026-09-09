@@ -4,9 +4,9 @@ import prisma from "@/lib/prisma";
 export default async function Home({
   searchParams
 }: {
-  searchParams: { contractId?: string }
+  searchParams: Promise<{ contractId?: string }>
 }) {
-  const contractId = searchParams.contractId;
+  const { contractId } = await searchParams;
   const debtFilter = contractId ? { contractId } : {};
 
   // Traer todos los contratos paral dropdown

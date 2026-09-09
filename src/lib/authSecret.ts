@@ -1,0 +1,1 @@
+export const authSecret = process.env.NEXTAUTH_SECRET || "default_super_secret_for_dev_b4_vercel";
