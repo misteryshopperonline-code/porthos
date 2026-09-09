@@ -14,7 +14,6 @@ export default async function Home({
     orderBy: { createdAt: 'desc' },
   });
 
-  // Métricas con filtro aplicado (si contractId existe)
   const totalCommunications = await prisma.communication.count({
     where: contractId ? { debt: { contractId } } : {},
   });
