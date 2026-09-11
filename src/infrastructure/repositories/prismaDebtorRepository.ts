@@ -1,5 +1,8 @@
 import type { PrismaClient } from '@prisma/client';
-import type { DebtorRepositoryPort } from '@/application/ports/debtorRepositoryPort';
+import type {
+  DebtorRepositoryPort,
+  UpsertWithDebtResult,
+} from '@/application/ports/debtorRepositoryPort';
 import { DEBT_STATUS } from '@/core/entities/debt';
 import type { Debtor } from '@/core/entities/debtor';
 import { toPrismaDecimal } from '@/core/money';
@@ -24,7 +27,7 @@ export class PrismaDebtorRepository implements DebtorRepositoryPort {
   async upsertWithDebt(
     debtorData: Omit<Debtor, 'id' | 'createdAt' | 'updatedAt' | 'score'>,
     debt: { contractId: string; amount: number; dueDate: Date },
-  ): Promise<Debtor> {
+  ): Promise<UpsertWithDebtResult> {
     return this.prisma.$transaction(async (tx) => {
       const upsertedDebtor = await tx.debtor.upsert({
         where: { identification: debtorData.identification },
@@ -43,6 +46,27 @@ export class PrismaDebtorRepository implements DebtorRepositoryPort {
         },
       });
 
+      const existingDebt = await tx.debt.findUnique({
+        where: {
+          debtorId_contractId: {
+            debtorId: upsertedDebtor.id,
+            contractId: debt.contractId,
+          },
+        },
+      });
+
+      if (existingDebt) {
+        await tx.debt.update({
+          where: { id: existingDebt.id },
+          data: {
+            amount: toPrismaDecimal(debt.amount),
+            dueDate: debt.dueDate,
+            // No reabrir deudas PAID automáticamente en re-carga.
+          },
+        });
+        return { debtor: upsertedDebtor, debtCreated: false };
+      }
+
       await tx.debt.create({
         data: {
           debtorId: upsertedDebtor.id,
@@ -53,7 +77,7 @@ export class PrismaDebtorRepository implements DebtorRepositoryPort {
         },
       });
 
-      return upsertedDebtor;
+      return { debtor: upsertedDebtor, debtCreated: true };
     });
   }
 

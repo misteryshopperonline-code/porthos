@@ -4,6 +4,7 @@ import { RegisterPlatformUserUseCase } from '@/application/useCases/registerPlat
 import type { UserRepositoryPort } from '@/application/ports/userRepositoryPort';
 import { actor } from '@/test/actors';
 import { InMemoryAuditLog } from '@/test/inMemoryAuditLog';
+import { InMemoryInviteTokenRepository } from '@/test/inMemoryInviteToken';
 import { AUDIT_ACTIONS } from '@/application/ports/auditLogPort';
 
 const hasher = {
@@ -14,9 +15,14 @@ const hasher = {
 describe('RegisterUserForActorUseCase', () => {
   it('bloquea operadores y sesiones vacías', async () => {
     const inner = new RegisterPlatformUserUseCase(
-      { findByEmail: vi.fn(), save: vi.fn(), listVisibleTo: vi.fn() } as unknown as UserRepositoryPort,
+      {
+        findByEmail: vi.fn(),
+        save: vi.fn(),
+        updatePassword: vi.fn(),
+        listVisibleTo: vi.fn(),
+      } as unknown as UserRepositoryPort,
       hasher,
-      () => 'temp',
+      new InMemoryInviteTokenRepository(),
     );
     const useCase = new RegisterUserForActorUseCase(inner, new InMemoryAuditLog());
 
@@ -37,16 +43,17 @@ describe('RegisterUserForActorUseCase', () => {
     expect(operator.success).toBe(false);
   });
 
-  it('audita la creación exitosa', async () => {
+  it('audita la creación exitosa con invite', async () => {
     const audit = new InMemoryAuditLog();
     const inner = new RegisterPlatformUserUseCase(
       {
         findByEmail: vi.fn().mockResolvedValue(null),
         save: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'u2' })),
+        updatePassword: vi.fn(),
         listVisibleTo: vi.fn(),
       } as unknown as UserRepositoryPort,
       hasher,
-      () => 'temp',
+      new InMemoryInviteTokenRepository(),
     );
     const useCase = new RegisterUserForActorUseCase(inner, audit);
 
@@ -58,6 +65,8 @@ describe('RegisterUserForActorUseCase', () => {
     });
 
     expect(result.success).toBe(true);
+    expect(result.inviteToken).toBeTruthy();
     expect(audit.entries[0]?.action).toBe(AUDIT_ACTIONS.USER_CREATED);
+    expect(audit.entries[0]?.details).toMatchObject({ inviteIssued: true });
   });
 });

@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { ListAdminUsersUseCase } from '@/application/useCases/listAdminUsersUseCase';
 import { actor } from '@/test/actors';
 
+const noopUserRepo = {
+  findByEmail: async () => null,
+  save: async (u: { email: string }) => ({ ...u, id: '1', name: null, role: 'OPERATOR' as const, contractId: null, passwordHash: null }),
+  updatePassword: async () => null,
+  listVisibleTo: async () => [],
+};
+
 describe('ListAdminUsersUseCase', () => {
   it('niega el listado a OPERATOR', async () => {
-    const useCase = new ListAdminUsersUseCase(
-      { findByEmail: async () => null, save: async (u) => ({ ...u, id: '1' }), listVisibleTo: async () => [] },
-      { listVisible: async () => [] },
-    );
+    const useCase = new ListAdminUsersUseCase(noopUserRepo, { listVisible: async () => [] });
     const result = await useCase.execute(actor({ role: 'OPERATOR' }));
     expect(result.success).toBe(false);
   });
@@ -16,8 +20,7 @@ describe('ListAdminUsersUseCase', () => {
     const seen: string[] = [];
     const useCase = new ListAdminUsersUseCase(
       {
-        findByEmail: async () => null,
-        save: async (u) => ({ ...u, id: '1' }),
+        ...noopUserRepo,
         listVisibleTo: async (current) => {
           seen.push(current.role);
           return [];

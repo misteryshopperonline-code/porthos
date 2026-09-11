@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { RegisterPlatformUserUseCase } from './registerPlatformUserUseCase';
 import type { PasswordHasherPort } from '@/application/ports/passwordHasherPort';
 import type { UserRepositoryPort } from '@/application/ports/userRepositoryPort';
+import { InMemoryInviteTokenRepository } from '@/test/inMemoryInviteToken';
 
 describe('RegisterPlatformUserUseCase RBAC Rules', () => {
   const mockCrypto: PasswordHasherPort = {
@@ -13,10 +14,12 @@ describe('RegisterPlatformUserUseCase RBAC Rules', () => {
     const mockRepo = {
       findByEmail: vi.fn().mockResolvedValue(null),
       save: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: '123' })),
+      updatePassword: vi.fn(),
       listVisibleTo: vi.fn(),
     } as unknown as UserRepositoryPort;
+    const invites = new InMemoryInviteTokenRepository();
 
-    const useCase = new RegisterPlatformUserUseCase(mockRepo, mockCrypto, () => 'temp-pass');
+    const useCase = new RegisterPlatformUserUseCase(mockRepo, mockCrypto, invites);
 
     const result = await useCase.execute('CONTRACT_ADMIN', 'contrato-xyz-789', {
       email: 'nuevooperador@gmail.com',
@@ -26,19 +29,23 @@ describe('RegisterPlatformUserUseCase RBAC Rules', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.temporaryPassword).toBe('temp-pass');
+    expect(result.inviteToken).toBeTruthy();
     expect(result.user?.contractId).toBe('contrato-xyz-789');
     expect(mockRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({
         role: 'OPERATOR',
         contractId: 'contrato-xyz-789',
+        passwordHash: null,
       }),
     );
   });
 
   it('CONTRACT_ADMIN intentando crear un GLOBAL_ADMIN deber ser bloqueado', async () => {
-    const mockRepo = {} as UserRepositoryPort;
-    const useCase = new RegisterPlatformUserUseCase(mockRepo, mockCrypto, () => 'temp-pass');
+    const useCase = new RegisterPlatformUserUseCase(
+      {} as UserRepositoryPort,
+      mockCrypto,
+      new InMemoryInviteTokenRepository(),
+    );
 
     const result = await useCase.execute('CONTRACT_ADMIN', 'contrato-xyz-789', {
       email: 'intruso@gmail.com',
@@ -52,7 +59,11 @@ describe('RegisterPlatformUserUseCase RBAC Rules', () => {
   });
 
   it('OPERATOR no puede registrar usuarios', async () => {
-    const useCase = new RegisterPlatformUserUseCase({} as UserRepositoryPort, mockCrypto, () => 'x');
+    const useCase = new RegisterPlatformUserUseCase(
+      {} as UserRepositoryPort,
+      mockCrypto,
+      new InMemoryInviteTokenRepository(),
+    );
     const result = await useCase.execute('OPERATOR', 'c1', {
       email: 'a@b.com',
       name: 'A',
@@ -66,10 +77,15 @@ describe('RegisterPlatformUserUseCase RBAC Rules', () => {
     const mockRepo = {
       findByEmail: vi.fn().mockResolvedValue(null),
       save: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: '444' })),
+      updatePassword: vi.fn(),
       listVisibleTo: vi.fn(),
     } as unknown as UserRepositoryPort;
 
-    const useCase = new RegisterPlatformUserUseCase(mockRepo, mockCrypto, () => 'temp-pass');
+    const useCase = new RegisterPlatformUserUseCase(
+      mockRepo,
+      mockCrypto,
+      new InMemoryInviteTokenRepository(),
+    );
 
     const result = await useCase.execute('GLOBAL_ADMIN', null, {
       email: 'clientenuevo@gmail.com',
@@ -81,5 +97,6 @@ describe('RegisterPlatformUserUseCase RBAC Rules', () => {
     expect(result.success).toBe(true);
     expect(result.user?.role).toBe('CONTRACT_ADMIN');
     expect(result.user?.contractId).toBe('contrato-real-externo');
+    expect(result.inviteToken).toBeTruthy();
   });
 });

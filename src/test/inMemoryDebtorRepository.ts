@@ -2,10 +2,12 @@ import type { DebtorRepositoryPort } from '@/application/ports/debtorRepositoryP
 import type { Debtor } from '@/core/entities/debtor';
 
 type StoredDebt = {
+  id: string;
   debtorId: string;
   contractId: string;
   amount: number;
   dueDate: Date;
+  status: string;
 };
 
 export class InMemoryDebtorRepository implements DebtorRepositoryPort {
@@ -29,7 +31,7 @@ export class InMemoryDebtorRepository implements DebtorRepositoryPort {
   async upsertWithDebt(
     debtor: Omit<Debtor, 'id' | 'createdAt' | 'updatedAt' | 'score'>,
     debt: { contractId: string; amount: number; dueDate: Date },
-  ): Promise<Debtor> {
+  ) {
     let existing = this.debtors.find((item) => item.identification === debtor.identification);
     if (!existing) {
       existing = await this.save(debtor);
@@ -39,13 +41,26 @@ export class InMemoryDebtorRepository implements DebtorRepositoryPort {
       existing.email = debtor.email;
       existing.phone = debtor.phone;
     }
+
+    const existingDebt = this.debts.find(
+      (item) => item.debtorId === existing!.id && item.contractId === debt.contractId,
+    );
+
+    if (existingDebt) {
+      existingDebt.amount = debt.amount;
+      existingDebt.dueDate = debt.dueDate;
+      return { debtor: existing, debtCreated: false };
+    }
+
     this.debts.push({
+      id: `debt-${this.debts.length + 1}`,
       debtorId: existing.id,
       contractId: debt.contractId,
       amount: debt.amount,
       dueDate: debt.dueDate,
+      status: 'PENDING',
     });
-    return existing;
+    return { debtor: existing, debtCreated: true };
   }
 
   async findById(id: string): Promise<Debtor | null> {

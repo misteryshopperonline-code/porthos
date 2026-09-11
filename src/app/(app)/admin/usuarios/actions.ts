@@ -12,6 +12,10 @@ function isUserRole(value: string): value is UserRole {
   return ROLES.includes(value as UserRole);
 }
 
+function appBaseUrl(): string {
+  return process.env.NEXTAUTH_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+}
+
 export async function createUserAction(
   _prevState: ActionState,
   formData: FormData,
@@ -40,12 +44,12 @@ export async function createUserAction(
 
   revalidatePath('/admin/usuarios');
 
-  const passwordNote = result.temporaryPassword
-    ? ` Contraseña temporal: ${result.temporaryPassword}`
+  const inviteNote = result.inviteToken
+    ? ` Enlace de activación (48h): ${appBaseUrl()}/activar?token=${result.inviteToken}`
     : '';
 
   return {
     success: true,
-    message: `${targetRole} creado exitosamente.${passwordNote}`,
+    message: `${targetRole} creado. El usuario debe definir su contraseña.${inviteNote}`,
   };
 }

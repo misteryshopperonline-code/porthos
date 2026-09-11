@@ -40,6 +40,7 @@ export class RegisterUserForActorUseCase {
         email: newUserConfig.email,
         role: newUserConfig.role,
         contractId: result.user?.contractId ?? null,
+        inviteIssued: Boolean(result.inviteToken),
       },
     });
 

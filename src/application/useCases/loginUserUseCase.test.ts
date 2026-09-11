@@ -11,7 +11,7 @@ const hasher: PasswordHasherPort = {
 describe('LoginUserUseCase', () => {
   it('no revela si el usuario existe o la clave es incorrecta', async () => {
     const missing = new LoginUserUseCase(
-      { findByEmail: vi.fn().mockResolvedValue(null), save: vi.fn(), listVisibleTo: vi.fn() } as unknown as UserRepositoryPort,
+      { findByEmail: vi.fn().mockResolvedValue(null), save: vi.fn(), updatePassword: vi.fn(), listVisibleTo: vi.fn() } as unknown as UserRepositoryPort,
       hasher,
     );
     const missingResult = await missing.execute('a@b.com', 'x');
@@ -28,6 +28,7 @@ describe('LoginUserUseCase', () => {
           passwordHash: 'hash',
         }),
         save: vi.fn(),
+        updatePassword: vi.fn(),
         listVisibleTo: vi.fn(),
       },
       { hash: vi.fn(), compare },
@@ -51,6 +52,7 @@ describe('LoginUserUseCase', () => {
           passwordHash: 'hash',
         }),
         save: vi.fn(),
+        updatePassword: vi.fn(),
         listVisibleTo: vi.fn(),
       },
       { hash: vi.fn(), compare: vi.fn().mockResolvedValue(true) },

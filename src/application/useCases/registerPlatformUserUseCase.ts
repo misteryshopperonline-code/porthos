@@ -1,12 +1,15 @@
+import type { InviteTokenPort } from '@/application/ports/inviteTokenPort';
 import type { PasswordHasherPort } from '@/application/ports/passwordHasherPort';
 import type { UserEntity, UserRepositoryPort } from '@/application/ports/userRepositoryPort';
 import type { UserRole } from '@/core/entities/user';
+
+const INVITE_TTL_MS = 48 * 60 * 60 * 1000;
 
 export class RegisterPlatformUserUseCase {
   constructor(
     private readonly userRepository: UserRepositoryPort,
     private readonly hasher: PasswordHasherPort,
-    private readonly generatePassword: () => string,
+    private readonly invites: InviteTokenPort,
   ) {}
 
   async execute(
@@ -22,7 +25,7 @@ export class RegisterPlatformUserUseCase {
   ): Promise<{
     success: boolean;
     user?: Omit<UserEntity, 'passwordHash'>;
-    temporaryPassword?: string;
+    inviteToken?: string;
     error?: string;
   }> {
     try {
@@ -45,9 +48,17 @@ export class RegisterPlatformUserUseCase {
         return { success: false, error: 'Un usuario con este email ya existe en el sistema.' };
       }
 
-      const wasGenerated = !newUserConfig.rawPassword;
-      const clearPassword = newUserConfig.rawPassword || this.generatePassword();
-      const passwordHash = await this.hasher.hash(clearPassword);
+      let passwordHash: string | null = null;
+      let inviteToken: string | undefined;
+
+      if (newUserConfig.rawPassword) {
+        passwordHash = await this.hasher.hash(newUserConfig.rawPassword);
+      } else {
+        inviteToken = await this.invites.create(
+          newUserConfig.email,
+          new Date(Date.now() + INVITE_TTL_MS),
+        );
+      }
 
       const savedUser = await this.userRepository.save({
         email: newUserConfig.email,
@@ -59,7 +70,7 @@ export class RegisterPlatformUserUseCase {
 
       return {
         success: true,
-        temporaryPassword: wasGenerated ? clearPassword : undefined,
+        inviteToken,
         user: {
           id: savedUser.id,
           email: savedUser.email,

@@ -25,10 +25,18 @@ export class BulkUploadUseCase {
     fileBuffer: Buffer,
     fileName: string,
     contractId: string,
-  ): Promise<{ success: number; failed: number; errors: { record: unknown; error: string }[] }> {
+  ): Promise<{
+    success: number;
+    created: number;
+    updated: number;
+    failed: number;
+    errors: { record: unknown; error: string }[];
+  }> {
     const records = await this.fileReader.parse(fileBuffer, fileName);
 
     let successCount = 0;
+    let created = 0;
+    let updated = 0;
     let failedCount = 0;
     const errors: { record: unknown; error: string }[] = [];
 
@@ -48,7 +56,7 @@ export class BulkUploadUseCase {
           throw new Error("El campo 'dueDate' no es una fecha válida.");
         }
 
-        await this.debtorRepository.upsertWithDebt(
+        const result = await this.debtorRepository.upsertWithDebt(
           {
             identification: String(record.identification),
             firstName: String(record.firstName),
@@ -64,6 +72,8 @@ export class BulkUploadUseCase {
         );
 
         successCount++;
+        if (result.debtCreated) created++;
+        else updated++;
       } catch (error) {
         failedCount++;
         errors.push({
@@ -73,6 +83,12 @@ export class BulkUploadUseCase {
       }
     }
 
-    return { success: successCount, failed: failedCount, errors };
+    return {
+      success: successCount,
+      created,
+      updated,
+      failed: failedCount,
+      errors,
+    };
   }
 }

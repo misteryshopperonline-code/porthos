@@ -42,6 +42,8 @@ export class BulkUploadForActorUseCase {
         contractId: input.contractId,
         fileName: input.fileName,
         uploaded: result.success,
+        created: result.created,
+        updated: result.updated,
         failed: result.failed,
       },
     });
@@ -49,6 +51,8 @@ export class BulkUploadForActorUseCase {
     return {
       success: true as const,
       uploaded: result.success,
+      created: result.created,
+      updated: result.updated,
       failed: result.failed,
       errors: result.errors,
     };
