@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import ContractSelector from '@/components/ContractSelector';
+import DebtStatusActions from '@/app/(app)/components/DebtStatusActions';
 import { getDashboardUseCase } from '@/composition/container';
 import { getAppSession } from '@/lib/session';
 
@@ -93,6 +94,7 @@ export default async function Home({
                 <th className="px-6 py-5 text-left text-xs font-semibold text-zinc-500 dark:text-gray-400 uppercase tracking-widest">Estado</th>
                 <th className="px-6 py-5 text-left text-xs font-semibold text-zinc-500 dark:text-gray-400 uppercase tracking-widest">Monto</th>
                 <th className="px-6 py-5 text-left text-xs font-semibold text-zinc-500 dark:text-gray-400 uppercase tracking-widest">Última Acción</th>
+                <th className="px-6 py-5 text-left text-xs font-semibold text-zinc-500 dark:text-gray-400 uppercase tracking-widest">Gestión</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-dark-border">
@@ -125,11 +127,14 @@ export default async function Home({
                         <span className="text-zinc-400 dark:text-gray-500 italic">No contactado</span>
                       )}
                     </td>
+                    <td className="px-6 py-5 whitespace-nowrap">
+                      <DebtStatusActions debtId={debt.id} status={debt.status} />
+                    </td>
                   </tr>
                 );
               }) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-zinc-500 dark:text-gray-500">
+                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-zinc-500 dark:text-gray-500">
                     No hay información de deudas registrada.
                   </td>
                 </tr>

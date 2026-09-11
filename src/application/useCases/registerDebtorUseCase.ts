@@ -1,5 +1,6 @@
 import { DebtorRepositoryPort } from '@/application/ports/debtorRepositoryPort';
 import { Debtor } from '@/core/entities/debtor';
+import { assertPositiveMoney } from '@/core/money';
 
 export class RegisterDebtorUseCase {
   constructor(private debtorRepository: DebtorRepositoryPort) {}
@@ -15,7 +16,8 @@ export class RegisterDebtorUseCase {
     dueDate: Date;
   }): Promise<{ success: boolean; debtor?: Debtor; error?: string }> {
     try {
-      if (!data.contractId || !data.amount || !data.dueDate) {
+      const amount = assertPositiveMoney(data.amount);
+      if (!data.contractId || amount === null || !data.dueDate) {
         return { success: false, error: 'Información de deuda o contrato faltante.' };
       }
 
@@ -29,14 +31,15 @@ export class RegisterDebtorUseCase {
         },
         {
           contractId: data.contractId,
-          amount: data.amount,
-          dueDate: data.dueDate
-        }
+          amount,
+          dueDate: data.dueDate,
+        },
       );
 
       return { success: true, debtor };
-    } catch (error: any) {
-      return { success: false, error: error.message || 'Error al registrar deudor y deuda.' };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error al registrar deudor y deuda.';
+      return { success: false, error: message };
     }
   }
 }

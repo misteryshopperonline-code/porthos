@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import type { DebtorRepositoryPort } from '@/application/ports/debtorRepositoryPort';
 import { DEBT_STATUS } from '@/core/entities/debt';
 import type { Debtor } from '@/core/entities/debtor';
+import { toPrismaDecimal } from '@/core/money';
 
 export class PrismaDebtorRepository implements DebtorRepositoryPort {
   constructor(private readonly prisma: PrismaClient) {}
@@ -46,7 +47,7 @@ export class PrismaDebtorRepository implements DebtorRepositoryPort {
         data: {
           debtorId: upsertedDebtor.id,
           contractId: debt.contractId,
-          amount: debt.amount,
+          amount: toPrismaDecimal(debt.amount),
           dueDate: debt.dueDate,
           status: DEBT_STATUS.PENDING,
         },

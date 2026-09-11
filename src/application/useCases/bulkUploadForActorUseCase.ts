@@ -1,3 +1,5 @@
+import type { AuditLogPort } from '@/application/ports/auditLogPort';
+import { AUDIT_ACTIONS } from '@/application/ports/auditLogPort';
 import type { SessionUser } from '@/core/entities/user';
 import { actorScope, assertContractWrite } from '@/core/tenant/scope';
 import { BulkUploadUseCase } from '@/application/useCases/bulkUploadUseCase';
@@ -5,7 +7,10 @@ import { BulkUploadUseCase } from '@/application/useCases/bulkUploadUseCase';
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
 
 export class BulkUploadForActorUseCase {
-  constructor(private readonly bulkUpload: BulkUploadUseCase) {}
+  constructor(
+    private readonly bulkUpload: BulkUploadUseCase,
+    private readonly audit: AuditLogPort,
+  ) {}
 
   async execute(
     actor: SessionUser | null,
@@ -29,6 +34,17 @@ export class BulkUploadForActorUseCase {
       input.fileName,
       input.contractId,
     );
+
+    await this.audit.record({
+      userId: actor.id,
+      action: AUDIT_ACTIONS.DEBTORS_BULK_UPLOADED,
+      details: {
+        contractId: input.contractId,
+        fileName: input.fileName,
+        uploaded: result.success,
+        failed: result.failed,
+      },
+    });
 
     return {
       success: true as const,

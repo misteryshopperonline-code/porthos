@@ -1,5 +1,6 @@
-import type { FileReaderPort } from '@/application/ports/fileReaderPort';
-import type { DebtorRepositoryPort } from '@/application/ports/debtorRepositoryPort';
+import { FileReaderPort } from '@/application/ports/fileReaderPort';
+import { DebtorRepositoryPort } from '@/application/ports/debtorRepositoryPort';
+import { assertPositiveMoney } from '@/core/money';
 
 function defaultDueDate(): Date {
   const dueDate = new Date();
@@ -11,11 +12,7 @@ function parseAmount(value: unknown): number | null {
   if (value === undefined || value === null || value === '') {
     return null;
   }
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-  return amount;
+  return assertPositiveMoney(Number(value));
 }
 
 export class BulkUploadUseCase {

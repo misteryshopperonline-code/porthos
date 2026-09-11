@@ -3,7 +3,9 @@ import { BulkUploadUseCase } from '@/application/useCases/bulkUploadUseCase';
 import { BulkUploadForActorUseCase } from '@/application/useCases/bulkUploadForActorUseCase';
 import type { FileReaderPort } from '@/application/ports/fileReaderPort';
 import { InMemoryDebtorRepository } from '@/test/inMemoryDebtorRepository';
+import { InMemoryAuditLog } from '@/test/inMemoryAuditLog';
 import { actor } from '@/test/actors';
+import { AUDIT_ACTIONS } from '@/application/ports/auditLogPort';
 
 class StaticFileReader implements FileReaderPort {
   constructor(private readonly rows: Record<string, unknown>[]) {}
@@ -37,7 +39,7 @@ describe('BulkUploadForActorUseCase', () => {
       new StaticFileReader([]),
       new InMemoryDebtorRepository(),
     );
-    const useCase = new BulkUploadForActorUseCase(inner);
+    const useCase = new BulkUploadForActorUseCase(inner, new InMemoryAuditLog());
 
     const noSession = await useCase.execute(null, {
       fileBuffer: Buffer.from('x'),
@@ -57,6 +59,7 @@ describe('BulkUploadForActorUseCase', () => {
   it('rechaza CSV mayores a 5MB', async () => {
     const useCase = new BulkUploadForActorUseCase(
       new BulkUploadUseCase(new StaticFileReader([]), new InMemoryDebtorRepository()),
+      new InMemoryAuditLog(),
     );
     const result = await useCase.execute(actor(), {
       fileBuffer: Buffer.alloc(5 * 1024 * 1024 + 1),
@@ -67,5 +70,30 @@ describe('BulkUploadForActorUseCase', () => {
     if (!result.success) {
       expect(result.error).toMatch(/5MB/);
     }
+  });
+
+  it('registra audit tras carga exitosa', async () => {
+    const audit = new InMemoryAuditLog();
+    const useCase = new BulkUploadForActorUseCase(
+      new BulkUploadUseCase(
+        new StaticFileReader([
+          { identification: '1', firstName: 'A', lastName: 'B', amount: '10.5' },
+        ]),
+        new InMemoryDebtorRepository(),
+      ),
+      audit,
+    );
+
+    const result = await useCase.execute(actor(), {
+      fileBuffer: Buffer.from('x'),
+      fileName: 'ok.csv',
+      contractId: 'contract-a',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.uploaded).toBe(1);
+    }
+    expect(audit.entries[0]?.action).toBe(AUDIT_ACTIONS.DEBTORS_BULK_UPLOADED);
   });
 });
