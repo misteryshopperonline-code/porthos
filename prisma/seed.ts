@@ -88,8 +88,10 @@ async function main() {
   })
   console.log('Contracts created')
 
-  // 4. Create sample Debts
-  const debt1 = await prisma.debt.create({
+  const existingDebt1 = await prisma.debt.findFirst({
+    where: { debtorId: debtor1.id, contractId: contract1.id },
+  })
+  const debt1 = existingDebt1 ?? await prisma.debt.create({
     data: {
       debtorId: debtor1.id,
       contractId: contract1.id,
@@ -99,7 +101,10 @@ async function main() {
     },
   })
 
-  const debt2 = await prisma.debt.create({
+  const existingDebt2 = await prisma.debt.findFirst({
+    where: { debtorId: debtor2.id, contractId: contract2.id },
+  })
+  const debt2 = existingDebt2 ?? await prisma.debt.create({
     data: {
       debtorId: debtor2.id,
       contractId: contract2.id,
@@ -108,36 +113,50 @@ async function main() {
       status: 'DEFAULTED',
     },
   })
-  
-  const debt3 = await prisma.debt.create({
-    data: {
-      debtorId: debtor3.id,
-      contractId: contract1.id,
-      amount: 3200.00,
-      dueDate: new Date('2024-05-20T00:00:00Z'),
-      status: 'PENDING',
-    },
+
+  const existingDebt3 = await prisma.debt.findFirst({
+    where: { debtorId: debtor3.id, contractId: contract1.id },
   })
+  if (!existingDebt3) {
+    await prisma.debt.create({
+      data: {
+        debtorId: debtor3.id,
+        contractId: contract1.id,
+        amount: 3200.00,
+        dueDate: new Date('2024-05-20T00:00:00Z'),
+        status: 'PENDING',
+      },
+    })
+  }
   console.log('Debts created')
 
-  // 5. Create sample Communications
-  await prisma.communication.create({
-    data: {
-      debtId: debt2.id,
-      type: 'EMAIL',
-      status: 'SENT',
-      content: 'Estimado/a María Gómez, le recordamos que tiene una deuda pendiente de $450.50.',
-    },
+  const existingEmail = await prisma.communication.findFirst({
+    where: { debtId: debt2.id, type: 'EMAIL' },
   })
+  if (!existingEmail) {
+    await prisma.communication.create({
+      data: {
+        debtId: debt2.id,
+        type: 'EMAIL',
+        status: 'SENT',
+        content: 'Estimado/a María Gómez, le recordamos que tiene una deuda pendiente de $450.50.',
+      },
+    })
+  }
 
-  await prisma.communication.create({
-    data: {
-      debtId: debt1.id,
-      type: 'WHATSAPP',
-      status: 'DELIVERED',
-      content: 'Hola Juan, por favor revise el estado de su deuda.',
-    },
+  const existingWhatsapp = await prisma.communication.findFirst({
+    where: { debtId: debt1.id, type: 'WHATSAPP' },
   })
+  if (!existingWhatsapp) {
+    await prisma.communication.create({
+      data: {
+        debtId: debt1.id,
+        type: 'WHATSAPP',
+        status: 'DELIVERED',
+        content: 'Hola Juan, por favor revise el estado de su deuda.',
+      },
+    })
+  }
   console.log('Communications created')
 
   console.log('✅ Seeding finished.')

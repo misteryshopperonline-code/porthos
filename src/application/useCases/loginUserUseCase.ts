@@ -1,37 +1,41 @@
-import { UserRepositoryPort, UserEntity } from '@/application/ports/userRepositoryPort';
-import { BcryptPasswordService } from '@/infrastructure/adapters/bcryptPasswordService';
+import type { PasswordHasherPort } from '@/application/ports/passwordHasherPort';
+import type { UserEntity, UserRepositoryPort } from '@/application/ports/userRepositoryPort';
+
+const INVALID_CREDENTIALS = 'Credenciales inválidas.';
 
 export class LoginUserUseCase {
   constructor(
-    private userRepository: UserRepositoryPort,
-    private cryptoService: BcryptPasswordService
+    private readonly userRepository: UserRepositoryPort,
+    private readonly hasher: PasswordHasherPort,
   ) {}
 
-  async execute(email: string, plainPassword: string): Promise<{ success: boolean; user?: Omit<UserEntity, 'passwordHash'>; error?: string }> {
+  async execute(
+    email: string,
+    plainPassword: string,
+  ): Promise<{ success: boolean; user?: Omit<UserEntity, 'passwordHash'>; error?: string }> {
     try {
       const existingUser = await this.userRepository.findByEmail(email);
-      
+
       if (!existingUser || !existingUser.passwordHash) {
-        return { success: false, error: 'Credenciales inválidas o cuenta no registrada tradicionalmente.' };
+        return { success: false, error: INVALID_CREDENTIALS };
       }
 
-      const isValid = await this.cryptoService.compare(plainPassword, existingUser.passwordHash);
-
+      const isValid = await this.hasher.compare(plainPassword, existingUser.passwordHash);
       if (!isValid) {
-        return { success: false, error: 'La contraseña ingresada es incorrecta.' };
+        return { success: false, error: INVALID_CREDENTIALS };
       }
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         user: {
           id: existingUser.id,
           email: existingUser.email,
           name: existingUser.name,
           role: existingUser.role,
           contractId: existingUser.contractId,
-        }
+        },
       };
-    } catch (e: any) {
+    } catch {
       return { success: false, error: 'Fallo interno de autenticación' };
     }
   }
