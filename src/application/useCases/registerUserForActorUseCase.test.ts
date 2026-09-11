@@ -5,6 +5,7 @@ import type { UserRepositoryPort } from '@/application/ports/userRepositoryPort'
 import { actor } from '@/test/actors';
 import { InMemoryAuditLog } from '@/test/inMemoryAuditLog';
 import { InMemoryInviteTokenRepository } from '@/test/inMemoryInviteToken';
+import { ConsoleMessagingAdapter } from '@/infrastructure/adapters/consoleMessagingAdapter';
 import { AUDIT_ACTIONS } from '@/application/ports/auditLogPort';
 
 const hasher = {
@@ -12,18 +13,24 @@ const hasher = {
   compare: vi.fn(),
 };
 
+function buildInner(repo: UserRepositoryPort) {
+  return new RegisterPlatformUserUseCase(
+    repo,
+    hasher,
+    new InMemoryInviteTokenRepository(),
+    new ConsoleMessagingAdapter(),
+    () => 'http://localhost:3000',
+  );
+}
+
 describe('RegisterUserForActorUseCase', () => {
   it('bloquea operadores y sesiones vacías', async () => {
-    const inner = new RegisterPlatformUserUseCase(
-      {
-        findByEmail: vi.fn(),
-        save: vi.fn(),
-        updatePassword: vi.fn(),
-        listVisibleTo: vi.fn(),
-      } as unknown as UserRepositoryPort,
-      hasher,
-      new InMemoryInviteTokenRepository(),
-    );
+    const inner = buildInner({
+      findByEmail: vi.fn(),
+      save: vi.fn(),
+      updatePassword: vi.fn(),
+      listVisibleTo: vi.fn(),
+    } as unknown as UserRepositoryPort);
     const useCase = new RegisterUserForActorUseCase(inner, new InMemoryAuditLog());
 
     const noSession = await useCase.execute(null, {
@@ -45,16 +52,12 @@ describe('RegisterUserForActorUseCase', () => {
 
   it('audita la creación exitosa con invite', async () => {
     const audit = new InMemoryAuditLog();
-    const inner = new RegisterPlatformUserUseCase(
-      {
-        findByEmail: vi.fn().mockResolvedValue(null),
-        save: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'u2' })),
-        updatePassword: vi.fn(),
-        listVisibleTo: vi.fn(),
-      } as unknown as UserRepositoryPort,
-      hasher,
-      new InMemoryInviteTokenRepository(),
-    );
+    const inner = buildInner({
+      findByEmail: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'u2' })),
+      updatePassword: vi.fn(),
+      listVisibleTo: vi.fn(),
+    } as unknown as UserRepositoryPort);
     const useCase = new RegisterUserForActorUseCase(inner, audit);
 
     const result = await useCase.execute(actor({ role: 'CONTRACT_ADMIN', contractId: 'c1' }), {

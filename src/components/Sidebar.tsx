@@ -15,6 +15,7 @@ export default function Sidebar() {
   const navigation = [
     { name: 'Dashboard', href: '/' },
     { name: 'Gestión de Portafolio', href: '/deudores' },
+    { name: 'Mensajería', href: '/mensajeria' },
   ];
 
   if (userRole === 'GLOBAL_ADMIN' || userRole === 'CONTRACT_ADMIN') {

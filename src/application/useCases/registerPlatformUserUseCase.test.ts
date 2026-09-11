@@ -3,12 +3,23 @@ import { RegisterPlatformUserUseCase } from './registerPlatformUserUseCase';
 import type { PasswordHasherPort } from '@/application/ports/passwordHasherPort';
 import type { UserRepositoryPort } from '@/application/ports/userRepositoryPort';
 import { InMemoryInviteTokenRepository } from '@/test/inMemoryInviteToken';
+import { ConsoleMessagingAdapter } from '@/infrastructure/adapters/consoleMessagingAdapter';
 
 describe('RegisterPlatformUserUseCase RBAC Rules', () => {
   const mockCrypto: PasswordHasherPort = {
     hash: vi.fn().mockResolvedValue('hashed_pwd'),
     compare: vi.fn(),
   };
+
+  function buildUseCase(repo: UserRepositoryPort, messaging = new ConsoleMessagingAdapter()) {
+    return new RegisterPlatformUserUseCase(
+      repo,
+      mockCrypto,
+      new InMemoryInviteTokenRepository(),
+      messaging,
+      () => 'http://localhost:3000',
+    );
+  }
 
   it('CONTRACT_ADMIN intentando crear un OPERATOR debe sobreescribir silenciosamente al contrato del admin', async () => {
     const mockRepo = {
@@ -17,19 +28,25 @@ describe('RegisterPlatformUserUseCase RBAC Rules', () => {
       updatePassword: vi.fn(),
       listVisibleTo: vi.fn(),
     } as unknown as UserRepositoryPort;
-    const invites = new InMemoryInviteTokenRepository();
+    const messaging = new ConsoleMessagingAdapter();
 
-    const useCase = new RegisterPlatformUserUseCase(mockRepo, mockCrypto, invites);
-
-    const result = await useCase.execute('CONTRACT_ADMIN', 'contrato-xyz-789', {
-      email: 'nuevooperador@gmail.com',
-      name: 'Nuevo Recolector',
-      role: 'OPERATOR',
-      contractId: 'intento-hacker-contrato-falso',
-    });
+    const result = await buildUseCase(mockRepo, messaging).execute(
+      'CONTRACT_ADMIN',
+      'contrato-xyz-789',
+      {
+        email: 'nuevooperador@gmail.com',
+        name: 'Nuevo Recolector',
+        role: 'OPERATOR',
+        contractId: 'intento-hacker-contrato-falso',
+      },
+    );
 
     expect(result.success).toBe(true);
     expect(result.inviteToken).toBeTruthy();
+    expect(result.inviteUrl).toContain('/activar?token=');
+    expect(result.inviteEmailSent).toBe(true);
+    expect(messaging.sent).toHaveLength(1);
+    expect(messaging.sent[0]?.to).toBe('nuevooperador@gmail.com');
     expect(result.user?.contractId).toBe('contrato-xyz-789');
     expect(mockRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -41,30 +58,23 @@ describe('RegisterPlatformUserUseCase RBAC Rules', () => {
   });
 
   it('CONTRACT_ADMIN intentando crear un GLOBAL_ADMIN deber ser bloqueado', async () => {
-    const useCase = new RegisterPlatformUserUseCase(
-      {} as UserRepositoryPort,
-      mockCrypto,
-      new InMemoryInviteTokenRepository(),
+    const result = await buildUseCase({} as UserRepositoryPort).execute(
+      'CONTRACT_ADMIN',
+      'contrato-xyz-789',
+      {
+        email: 'intruso@gmail.com',
+        name: 'Hacker',
+        role: 'GLOBAL_ADMIN',
+        contractId: null,
+      },
     );
-
-    const result = await useCase.execute('CONTRACT_ADMIN', 'contrato-xyz-789', {
-      email: 'intruso@gmail.com',
-      name: 'Hacker',
-      role: 'GLOBAL_ADMIN',
-      contractId: null,
-    });
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('Como administrador de contrato sólo puedes registrar operadores');
   });
 
   it('OPERATOR no puede registrar usuarios', async () => {
-    const useCase = new RegisterPlatformUserUseCase(
-      {} as UserRepositoryPort,
-      mockCrypto,
-      new InMemoryInviteTokenRepository(),
-    );
-    const result = await useCase.execute('OPERATOR', 'c1', {
+    const result = await buildUseCase({} as UserRepositoryPort).execute('OPERATOR', 'c1', {
       email: 'a@b.com',
       name: 'A',
       role: 'OPERATOR',
@@ -81,13 +91,7 @@ describe('RegisterPlatformUserUseCase RBAC Rules', () => {
       listVisibleTo: vi.fn(),
     } as unknown as UserRepositoryPort;
 
-    const useCase = new RegisterPlatformUserUseCase(
-      mockRepo,
-      mockCrypto,
-      new InMemoryInviteTokenRepository(),
-    );
-
-    const result = await useCase.execute('GLOBAL_ADMIN', null, {
+    const result = await buildUseCase(mockRepo).execute('GLOBAL_ADMIN', null, {
       email: 'clientenuevo@gmail.com',
       name: 'Dueño de Contrato',
       role: 'CONTRACT_ADMIN',

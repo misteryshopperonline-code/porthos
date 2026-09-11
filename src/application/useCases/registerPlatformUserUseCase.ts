@@ -1,4 +1,5 @@
 import type { InviteTokenPort } from '@/application/ports/inviteTokenPort';
+import type { MessagingPort } from '@/application/ports/messagingPort';
 import type { PasswordHasherPort } from '@/application/ports/passwordHasherPort';
 import type { UserEntity, UserRepositoryPort } from '@/application/ports/userRepositoryPort';
 import type { UserRole } from '@/core/entities/user';
@@ -10,6 +11,8 @@ export class RegisterPlatformUserUseCase {
     private readonly userRepository: UserRepositoryPort,
     private readonly hasher: PasswordHasherPort,
     private readonly invites: InviteTokenPort,
+    private readonly messaging: MessagingPort,
+    private readonly appBaseUrl: () => string,
   ) {}
 
   async execute(
@@ -26,6 +29,8 @@ export class RegisterPlatformUserUseCase {
     success: boolean;
     user?: Omit<UserEntity, 'passwordHash'>;
     inviteToken?: string;
+    inviteUrl?: string;
+    inviteEmailSent?: boolean;
     error?: string;
   }> {
     try {
@@ -50,6 +55,8 @@ export class RegisterPlatformUserUseCase {
 
       let passwordHash: string | null = null;
       let inviteToken: string | undefined;
+      let inviteUrl: string | undefined;
+      let inviteEmailSent = false;
 
       if (newUserConfig.rawPassword) {
         passwordHash = await this.hasher.hash(newUserConfig.rawPassword);
@@ -58,6 +65,7 @@ export class RegisterPlatformUserUseCase {
           newUserConfig.email,
           new Date(Date.now() + INVITE_TTL_MS),
         );
+        inviteUrl = `${this.appBaseUrl()}/activar?token=${inviteToken}`;
       }
 
       const savedUser = await this.userRepository.save({
@@ -68,9 +76,21 @@ export class RegisterPlatformUserUseCase {
         passwordHash,
       });
 
+      if (inviteUrl) {
+        inviteEmailSent = await this.messaging.sendEmail(
+          newUserConfig.email,
+          'Activa tu cuenta en Porthos',
+          `<p>Hola ${newUserConfig.name},</p>
+           <p>Te invitaron a Porthos. Activa tu cuenta (válido 48h):</p>
+           <p><a href="${inviteUrl}">${inviteUrl}</a></p>`,
+        );
+      }
+
       return {
         success: true,
         inviteToken,
+        inviteUrl,
+        inviteEmailSent,
         user: {
           id: savedUser.id,
           email: savedUser.email,
