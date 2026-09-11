@@ -1,18 +1,25 @@
-import { withAuth } from "next-auth/middleware";
-import { authSecret } from "@/lib/authSecret";
+import { withAuth } from 'next-auth/middleware';
+import { getAuthSecret } from '@/lib/authSecret';
 
-// El proxy intercepta las peticiones de las rutas especificadas en el matcher.
-// Redirigirá automáticamente a la página de login si no detecta una sesión válida (JWT Token).
 export const proxy = withAuth({
-  secret: authSecret,
+  secret: getAuthSecret(),
   pages: {
-    signIn: "/login",
+    signIn: '/login',
+  },
+  callbacks: {
+    authorized: ({ token, req }) => {
+      if (!token) {
+        return false;
+      }
+      const pathname = req.nextUrl.pathname;
+      if (pathname.startsWith('/admin') && token.role === 'OPERATOR') {
+        return false;
+      }
+      return true;
+    },
   },
 });
 
 export const config = {
-  // Protegemos todas las rutas excepto login, el api de nextauth propio y los archivos estáticos.
-  matcher: [
-    "/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ['/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)'],
 };

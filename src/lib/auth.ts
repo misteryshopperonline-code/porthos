@@ -1,33 +1,27 @@
-import { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaUserRepository } from "@/infrastructure/repositories/prismaUserRepository";
-import { BcryptPasswordService } from "@/infrastructure/adapters/bcryptPasswordService";
-import { LoginUserUseCase } from "@/application/useCases/loginUserUseCase";
-import { authSecret } from "@/lib/authSecret";
-
-const userRepository = new PrismaUserRepository();
-const cryptoService = new BcryptPasswordService();
-const loginUseCase = new LoginUserUseCase(userRepository, cryptoService);
+import type { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { loginUserUseCase } from '@/composition/container';
+import { getAuthSecret } from '@/lib/authSecret';
 
 export const authOptions: NextAuthOptions = {
   session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 dias
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60,
   },
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        email: { label: "Correo", type: "email" },
-        password: { label: "Contraseña", type: "password" }
+        email: { label: 'Correo', type: 'email' },
+        password: { label: 'Contraseña', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const result = await loginUseCase.execute(credentials.email, credentials.password);
-        
+        const result = await loginUserUseCase.execute(credentials.email, credentials.password);
+
         if (!result.success || !result.user) {
-          throw new Error(result.error || "Credenciales incorrectas");
+          throw new Error(result.error || 'Credenciales incorrectas');
         }
 
         return {
@@ -35,31 +29,31 @@ export const authOptions: NextAuthOptions = {
           email: result.user.email,
           name: result.user.name,
           role: result.user.role,
-          contractId: result.user.contractId
+          contractId: result.user.contractId,
         };
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
-        token.contractId = (user as any).contractId;
+        token.role = user.role;
+        token.contractId = user.contractId;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        (session.user as any).contractId = token.contractId;
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.contractId = token.contractId;
       }
       return session;
-    }
+    },
   },
   pages: {
-    signIn: '/login', 
+    signIn: '/login',
   },
-  secret: authSecret
+  secret: getAuthSecret(),
 };

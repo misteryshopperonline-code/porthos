@@ -10,13 +10,11 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  const userRole = (session?.user as any)?.role;
+  const userRole = session?.user?.role;
 
   const navigation = [
     { name: 'Dashboard', href: '/' },
     { name: 'Gestión de Portafolio', href: '/deudores' },
-    { name: 'Mensajería', href: '/mensajeria' },
-    { name: 'Contratos PDF', href: '/contratos' },
   ];
 
   if (userRole === 'GLOBAL_ADMIN' || userRole === 'CONTRACT_ADMIN') {
@@ -56,7 +54,7 @@ export default function Sidebar() {
       <div className="p-4 mt-auto border-t border-zinc-200 dark:border-dark-border flex flex-col gap-4">
         {session && (
           <div className="flex flex-col gap-2 mb-2">
-            <p className="text-sm font-semibold text-zinc-700 dark:text-gray-300 truncate px-2">{(session.user as any)?.name}</p>
+            <p className="text-sm font-semibold text-zinc-700 dark:text-gray-300 truncate px-2">{session.user?.name}</p>
             <p className="text-xs text-brand-600 dark:text-brand-500 font-bold uppercase tracking-wider px-2">{userRole}</p>
             <button 
               onClick={() => signOut({ callbackUrl: '/login' })}
