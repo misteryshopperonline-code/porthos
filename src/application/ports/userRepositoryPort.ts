@@ -16,6 +16,7 @@ export type UserListItem = Omit<UserEntity, 'passwordHash'> & {
 export interface UserRepositoryPort {
   findByEmail(email: string): Promise<UserEntity | null>;
   save(user: Omit<UserEntity, 'id'>): Promise<UserEntity>;
+  updatePassword(email: string, passwordHash: string): Promise<UserEntity | null>;
   listVisibleTo(actor: SessionUser): Promise<UserListItem[]>;
 }
 

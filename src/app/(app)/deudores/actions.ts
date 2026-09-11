@@ -78,6 +78,6 @@ export async function bulkUploadDebtorsAction(
 
   return {
     success: true,
-    message: `Carga masiva: ${result.uploaded} registros procesados.${errorHint}`,
+    message: `Carga masiva: ${result.uploaded} OK (${result.created} nuevas, ${result.updated} actualizadas).${errorHint}`,
   };
 }

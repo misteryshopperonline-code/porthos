@@ -1,5 +1,6 @@
-import type { FileReaderPort } from '@/application/ports/fileReaderPort';
-import type { DebtorRepositoryPort } from '@/application/ports/debtorRepositoryPort';
+import { FileReaderPort } from '@/application/ports/fileReaderPort';
+import { DebtorRepositoryPort } from '@/application/ports/debtorRepositoryPort';
+import { assertPositiveMoney } from '@/core/money';
 
 function defaultDueDate(): Date {
   const dueDate = new Date();
@@ -11,11 +12,7 @@ function parseAmount(value: unknown): number | null {
   if (value === undefined || value === null || value === '') {
     return null;
   }
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-  return amount;
+  return assertPositiveMoney(Number(value));
 }
 
 export class BulkUploadUseCase {
@@ -28,10 +25,18 @@ export class BulkUploadUseCase {
     fileBuffer: Buffer,
     fileName: string,
     contractId: string,
-  ): Promise<{ success: number; failed: number; errors: { record: unknown; error: string }[] }> {
+  ): Promise<{
+    success: number;
+    created: number;
+    updated: number;
+    failed: number;
+    errors: { record: unknown; error: string }[];
+  }> {
     const records = await this.fileReader.parse(fileBuffer, fileName);
 
     let successCount = 0;
+    let created = 0;
+    let updated = 0;
     let failedCount = 0;
     const errors: { record: unknown; error: string }[] = [];
 
@@ -51,7 +56,7 @@ export class BulkUploadUseCase {
           throw new Error("El campo 'dueDate' no es una fecha válida.");
         }
 
-        await this.debtorRepository.upsertWithDebt(
+        const result = await this.debtorRepository.upsertWithDebt(
           {
             identification: String(record.identification),
             firstName: String(record.firstName),
@@ -67,6 +72,8 @@ export class BulkUploadUseCase {
         );
 
         successCount++;
+        if (result.debtCreated) created++;
+        else updated++;
       } catch (error) {
         failedCount++;
         errors.push({
@@ -76,6 +83,12 @@ export class BulkUploadUseCase {
       }
     }
 
-    return { success: successCount, failed: failedCount, errors };
+    return {
+      success: successCount,
+      created,
+      updated,
+      failed: failedCount,
+      errors,
+    };
   }
 }

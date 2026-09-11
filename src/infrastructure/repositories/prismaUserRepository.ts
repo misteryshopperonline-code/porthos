@@ -42,6 +42,18 @@ export class PrismaUserRepository implements UserRepositoryPort {
     return toEntity(newUser);
   }
 
+  async updatePassword(email: string, passwordHash: string): Promise<UserEntity | null> {
+    try {
+      const updated = await this.prisma.user.update({
+        where: { email },
+        data: { passwordHash },
+      });
+      return toEntity(updated);
+    } catch {
+      return null;
+    }
+  }
+
   async listVisibleTo(actor: SessionUser): Promise<UserListItem[]> {
     if (actor.role === 'OPERATOR') {
       return [];

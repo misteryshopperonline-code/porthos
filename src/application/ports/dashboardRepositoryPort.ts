@@ -1,9 +1,12 @@
+import type { CommunicationStatus, CommunicationType } from '@/core/entities/communication';
+import type { DebtStatus } from '@/core/entities/debt';
+
 export type RecentDebtRow = {
   id: string;
   amount: number;
-  status: string;
+  status: DebtStatus;
   debtorName: string;
-  latestCommunication: { type: string; status: string } | null;
+  latestCommunication: { type: CommunicationType; status: CommunicationStatus } | null;
 };
 
 export type DashboardSnapshot = {

@@ -6,16 +6,16 @@ describe('RegisterDebtorUseCase', () => {
   it('debe fallar si faltan datos de la deuda (contrato o monto)', async () => {
     const mockRepo = {} as DebtorRepositoryPort;
     const useCase = new RegisterDebtorUseCase(mockRepo);
-    
+
     const result = await useCase.execute({
       identification: '123456789',
       firstName: 'Juan',
       lastName: 'Perez',
       contractId: '',
       amount: 0,
-      dueDate: new Date()
+      dueDate: new Date(),
     });
-    
+
     expect(result.success).toBe(false);
     expect(result.error).toBe('Información de deuda o contrato faltante.');
   });
@@ -30,31 +30,32 @@ describe('RegisterDebtorUseCase', () => {
       phone: null,
       score: 100,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
-    
+
     const mockRepo = {
-      upsertWithDebt: vi.fn().mockResolvedValue(mockDebtor)
+      upsertWithDebt: vi.fn().mockResolvedValue({ debtor: mockDebtor, debtCreated: true }),
     } as unknown as DebtorRepositoryPort;
-    
+
     const useCase = new RegisterDebtorUseCase(mockRepo);
-    
+
     const testDate = new Date('2026-12-31');
     const result = await useCase.execute({
       identification: '123456789',
       firstName: 'Juan',
       lastName: 'Perez',
       contractId: 'contrato-x',
-      amount: 1540.50,
-      dueDate: testDate
+      amount: 1540.5,
+      dueDate: testDate,
     });
-    
+
     expect(result.success).toBe(true);
     expect(result.debtor?.id).toBe('deudor-falso-1');
+    expect(result.debtCreated).toBe(true);
     expect(mockRepo.upsertWithDebt).toHaveBeenCalledTimes(1);
     expect(mockRepo.upsertWithDebt).toHaveBeenCalledWith(
       expect.objectContaining({ identification: '123456789', firstName: 'Juan' }),
-      expect.objectContaining({ contractId: 'contrato-x', amount: 1540.50, dueDate: testDate })
+      expect.objectContaining({ contractId: 'contrato-x', amount: 1540.5, dueDate: testDate }),
     );
   });
 });

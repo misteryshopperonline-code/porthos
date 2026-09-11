@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { BulkUploadUseCase } from '@/application/useCases/bulkUploadUseCase';
 import { BulkUploadForActorUseCase } from '@/application/useCases/bulkUploadForActorUseCase';
+import { RegisterDebtorUseCase } from '@/application/useCases/registerDebtorUseCase';
 import type { FileReaderPort } from '@/application/ports/fileReaderPort';
 import { InMemoryDebtorRepository } from '@/test/inMemoryDebtorRepository';
+import { InMemoryAuditLog } from '@/test/inMemoryAuditLog';
 import { actor } from '@/test/actors';
+import { AUDIT_ACTIONS } from '@/application/ports/auditLogPort';
 
 class StaticFileReader implements FileReaderPort {
   constructor(private readonly rows: Record<string, unknown>[]) {}
@@ -11,6 +14,49 @@ class StaticFileReader implements FileReaderPort {
     return this.rows;
   }
 }
+
+describe('multi-contrato e idempotencia de deudas', () => {
+  it('misma identificación en dos contratos = 1 deudor y 2 deudas', async () => {
+    const repo = new InMemoryDebtorRepository();
+    const useCase = new RegisterDebtorUseCase(repo);
+    const person = {
+      identification: 'NIT-1',
+      firstName: 'Ana',
+      lastName: 'Ruiz',
+      amount: 100,
+      dueDate: new Date('2026-12-01'),
+    };
+
+    await useCase.execute({ ...person, contractId: 'contract-a' });
+    await useCase.execute({ ...person, contractId: 'contract-b', amount: 200 });
+
+    expect(repo.debtors).toHaveLength(1);
+    expect(repo.debts).toHaveLength(2);
+    expect(repo.debts.map((d) => d.contractId).sort()).toEqual(['contract-a', 'contract-b']);
+  });
+
+  it('misma identificación + mismo contrato actualiza la deuda (idempotente)', async () => {
+    const repo = new InMemoryDebtorRepository();
+    const useCase = new RegisterDebtorUseCase(repo);
+    const base = {
+      identification: 'NIT-1',
+      firstName: 'Ana',
+      lastName: 'Ruiz',
+      contractId: 'contract-a',
+      dueDate: new Date('2026-12-01'),
+    };
+
+    const first = await useCase.execute({ ...base, amount: 100 });
+    const second = await useCase.execute({ ...base, amount: 250, firstName: 'Ana María' });
+
+    expect(first.debtCreated).toBe(true);
+    expect(second.debtCreated).toBe(false);
+    expect(repo.debtors).toHaveLength(1);
+    expect(repo.debts).toHaveLength(1);
+    expect(repo.debts[0]?.amount).toBe(250);
+    expect(repo.debtors[0]?.firstName).toBe('Ana María');
+  });
+});
 
 describe('BulkUploadUseCase', () => {
   it('crea deuda con upsert y reporta filas inválidas', async () => {
@@ -25,9 +71,12 @@ describe('BulkUploadUseCase', () => {
     const result = await useCase.execute(Buffer.from('csv'), 'file.csv', 'contract-a');
 
     expect(result.success).toBe(2);
+    expect(result.created).toBe(1);
+    expect(result.updated).toBe(1);
     expect(result.failed).toBe(1);
     expect(repo.debtors).toHaveLength(1);
-    expect(repo.debts).toHaveLength(2);
+    expect(repo.debts).toHaveLength(1);
+    expect(repo.debts[0]?.amount).toBe(20);
   });
 });
 
@@ -37,7 +86,7 @@ describe('BulkUploadForActorUseCase', () => {
       new StaticFileReader([]),
       new InMemoryDebtorRepository(),
     );
-    const useCase = new BulkUploadForActorUseCase(inner);
+    const useCase = new BulkUploadForActorUseCase(inner, new InMemoryAuditLog());
 
     const noSession = await useCase.execute(null, {
       fileBuffer: Buffer.from('x'),
@@ -57,6 +106,7 @@ describe('BulkUploadForActorUseCase', () => {
   it('rechaza CSV mayores a 5MB', async () => {
     const useCase = new BulkUploadForActorUseCase(
       new BulkUploadUseCase(new StaticFileReader([]), new InMemoryDebtorRepository()),
+      new InMemoryAuditLog(),
     );
     const result = await useCase.execute(actor(), {
       fileBuffer: Buffer.alloc(5 * 1024 * 1024 + 1),
@@ -67,5 +117,32 @@ describe('BulkUploadForActorUseCase', () => {
     if (!result.success) {
       expect(result.error).toMatch(/5MB/);
     }
+  });
+
+  it('registra audit tras carga exitosa', async () => {
+    const audit = new InMemoryAuditLog();
+    const useCase = new BulkUploadForActorUseCase(
+      new BulkUploadUseCase(
+        new StaticFileReader([
+          { identification: '1', firstName: 'A', lastName: 'B', amount: '10.5' },
+        ]),
+        new InMemoryDebtorRepository(),
+      ),
+      audit,
+    );
+
+    const result = await useCase.execute(actor(), {
+      fileBuffer: Buffer.from('x'),
+      fileName: 'ok.csv',
+      contractId: 'contract-a',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.uploaded).toBe(1);
+      expect(result.created).toBe(1);
+      expect(result.updated).toBe(0);
+    }
+    expect(audit.entries[0]?.action).toBe(AUDIT_ACTIONS.DEBTORS_BULK_UPLOADED);
   });
 });

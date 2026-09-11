@@ -3,7 +3,10 @@ import type {
   DashboardRepositoryPort,
   DashboardSnapshot,
 } from '@/application/ports/dashboardRepositoryPort';
+import type { CommunicationStatus, CommunicationType } from '@/core/entities/communication';
+import type { DebtStatus } from '@/core/entities/debt';
 import { DEBT_STATUS, OUTSTANDING_DEBT_STATUSES } from '@/core/entities/debt';
+import { toMoneyNumber } from '@/core/money';
 
 export class PrismaDashboardRepository implements DashboardRepositoryPort {
   constructor(private readonly prisma: PrismaClient) {}
@@ -50,19 +53,19 @@ export class PrismaDashboardRepository implements DashboardRepositoryPort {
 
     return {
       communicationsSent,
-      outstandingAmount: outstanding._sum.amount ?? 0,
-      recoveredAmount: recovered._sum.amount ?? 0,
+      outstandingAmount: toMoneyNumber(outstanding._sum.amount),
+      recoveredAmount: toMoneyNumber(recovered._sum.amount),
       linkedDebtCount,
       contractCount,
       recentDebts: recent.map((debt) => ({
         id: debt.id,
-        amount: debt.amount,
-        status: debt.status,
+        amount: toMoneyNumber(debt.amount),
+        status: debt.status as DebtStatus,
         debtorName: `${debt.debtor.firstName} ${debt.debtor.lastName}`,
         latestCommunication: debt.communications[0]
           ? {
-              type: debt.communications[0].type,
-              status: debt.communications[0].status,
+              type: debt.communications[0].type as CommunicationType,
+              status: debt.communications[0].status as CommunicationStatus,
             }
           : null,
       })),
