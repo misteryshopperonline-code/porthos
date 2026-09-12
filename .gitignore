@@ -29,6 +29,10 @@ pnpm-debug.log*
 .env*.local
 .env
 
+# uploaded contract PDFs (local storage adapter)
+/public/contracts/**
+!/public/contracts/.gitkeep
+
 # vercel
 .vercel
 tsconfig.tsbuildinfo

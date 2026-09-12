@@ -2,6 +2,8 @@ import prisma from '@/lib/prisma';
 import { BcryptPasswordService } from '@/infrastructure/adapters/bcryptPasswordService';
 import { PapaCsvFileReader } from '@/infrastructure/adapters/papaCsvFileReader';
 import { createMessagingAdapter } from '@/infrastructure/adapters/createMessagingAdapter';
+import { createAiPdfParser } from '@/infrastructure/adapters/createAiPdfParser';
+import { createFileStorage } from '@/infrastructure/adapters/createFileStorage';
 import { PrismaUserRepository } from '@/infrastructure/repositories/prismaUserRepository';
 import { PrismaDebtorRepository } from '@/infrastructure/repositories/prismaDebtorRepository';
 import { PrismaContractRepository } from '@/infrastructure/repositories/prismaContractRepository';
@@ -24,10 +26,14 @@ import { UpdateDebtStatusForActorUseCase } from '@/application/useCases/updateDe
 import { SetPasswordWithInviteUseCase } from '@/application/useCases/setPasswordWithInviteUseCase';
 import { ListCommunicationsForActorUseCase } from '@/application/useCases/listCommunicationsForActorUseCase';
 import { SendDebtReminderForActorUseCase } from '@/application/useCases/sendDebtReminderForActorUseCase';
+import { AnalyzeContractPdfForActorUseCase } from '@/application/useCases/analyzeContractPdfForActorUseCase';
+import { ListContractDocumentsForActorUseCase } from '@/application/useCases/listContractDocumentsForActorUseCase';
 
 const hasher = new BcryptPasswordService();
 const fileReader = new PapaCsvFileReader();
 export const messagingAdapter = createMessagingAdapter();
+export const aiPdfParser = createAiPdfParser();
+export const fileStorage = createFileStorage();
 
 function appBaseUrl() {
   return process.env.NEXTAUTH_URL?.replace(/\/$/, '') || 'http://localhost:3000';
@@ -90,5 +96,14 @@ export const sendDebtReminderForActorUseCase = new SendDebtReminderForActorUseCa
   debtRepository,
   communicationRepository,
   messagingAdapter,
+  auditLogRepository,
+);
+export const listContractDocumentsForActorUseCase = new ListContractDocumentsForActorUseCase(
+  contractRepository,
+);
+export const analyzeContractPdfForActorUseCase = new AnalyzeContractPdfForActorUseCase(
+  contractRepository,
+  fileStorage,
+  aiPdfParser,
   auditLogRepository,
 );

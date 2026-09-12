@@ -16,6 +16,7 @@ export default function Sidebar() {
     { name: 'Dashboard', href: '/' },
     { name: 'Gestión de Portafolio', href: '/deudores' },
     { name: 'Mensajería', href: '/mensajeria' },
+    { name: 'Contratos PDF-IA', href: '/contratos' },
   ];
 
   if (userRole === 'GLOBAL_ADMIN' || userRole === 'CONTRACT_ADMIN') {

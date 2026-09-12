@@ -1,14 +1,10 @@
-export interface ContractConditions {
-  amount?: number;
-  dueDate?: string;
-  parties?: string[];
-  interestRate?: number;
-  [key: string]: any;
-}
+import type { ContractConditions } from '@/core/entities/contractConditions';
+
+export type { ContractConditions };
 
 export interface AiPdfParserPort {
   /**
-   * Extrae condiciones clave de un contrato PDF utilizando un modelo de IA entrenado.
+   * Extrae condiciones clave de un contrato PDF.
    */
   extractConditions(pdfBuffer: Buffer): Promise<ContractConditions>;
 }
