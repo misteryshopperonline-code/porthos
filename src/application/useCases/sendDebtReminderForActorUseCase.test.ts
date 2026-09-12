@@ -4,9 +4,13 @@ import type {
   CommunicationRepositoryPort,
   CreateCommunicationInput,
 } from '@/application/ports/communicationRepositoryPort';
-import type { DebtRepositoryPort, DebtWithContact } from '@/application/ports/debtRepositoryPort';
+import type {
+  DebtRecord,
+  DebtRepositoryPort,
+  DebtWithContact,
+} from '@/application/ports/debtRepositoryPort';
 import type { MessagingPort } from '@/application/ports/messagingPort';
-import { DEBT_STATUS } from '@/core/entities/debt';
+import { DEBT_STATUS, type DebtStatus } from '@/core/entities/debt';
 import { SendDebtReminderForActorUseCase } from '@/application/useCases/sendDebtReminderForActorUseCase';
 import { actor } from '@/test/actors';
 
@@ -24,13 +28,16 @@ function debt(overrides: Partial<DebtWithContact> = {}): DebtWithContact {
 
 class FakeDebts implements DebtRepositoryPort {
   constructor(private readonly row: DebtWithContact | null) {}
-  async findById() {
+
+  async findById(_id: string): Promise<DebtRecord | null> {
     return this.row;
   }
-  async findByIdWithContact() {
+
+  async findByIdWithContact(_id: string): Promise<DebtWithContact | null> {
     return this.row;
   }
-  async updateStatus() {
+
+  async updateStatus(_id: string, _status: DebtStatus): Promise<DebtRecord> {
     throw new Error('not used');
   }
 }
