@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import ContractSelector from '@/components/ContractSelector';
 import DebtStatusActions from '@/app/(app)/components/DebtStatusActions';
+import SendDebtReminderButton from '@/app/(app)/components/SendDebtReminderButton';
 import { getDashboardUseCase } from '@/composition/container';
 import { getAppSession } from '@/lib/session';
 
@@ -128,7 +129,10 @@ export default async function Home({
                       )}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <DebtStatusActions debtId={debt.id} status={debt.status} />
+                      <div className="flex flex-col gap-2">
+                        <DebtStatusActions debtId={debt.id} status={debt.status} />
+                        {debt.status !== 'PAID' && <SendDebtReminderButton debtId={debt.id} />}
+                      </div>
                     </td>
                   </tr>
                 );

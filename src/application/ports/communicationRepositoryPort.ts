@@ -13,6 +13,14 @@ export type CommunicationListItem = {
   amount: number;
 };
 
+export type CreateCommunicationInput = {
+  debtId: string;
+  type: CommunicationType;
+  status: CommunicationStatus;
+  content: string;
+};
+
 export interface CommunicationRepositoryPort {
   listRecent(scope: TenantScope, limit?: number): Promise<CommunicationListItem[]>;
+  create(input: CreateCommunicationInput): Promise<{ id: string }>;
 }

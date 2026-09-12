@@ -27,6 +27,10 @@ class FakeComms implements CommunicationRepositoryPort {
       },
     ];
   }
+
+  async create() {
+    return { id: 'unused' };
+  }
 }
 
 describe('ListCommunicationsForActorUseCase', () => {

@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { BcryptPasswordService } from '@/infrastructure/adapters/bcryptPasswordService';
 import { PapaCsvFileReader } from '@/infrastructure/adapters/papaCsvFileReader';
-import { ConsoleMessagingAdapter } from '@/infrastructure/adapters/consoleMessagingAdapter';
+import { createMessagingAdapter } from '@/infrastructure/adapters/createMessagingAdapter';
 import { PrismaUserRepository } from '@/infrastructure/repositories/prismaUserRepository';
 import { PrismaDebtorRepository } from '@/infrastructure/repositories/prismaDebtorRepository';
 import { PrismaContractRepository } from '@/infrastructure/repositories/prismaContractRepository';
@@ -23,10 +23,11 @@ import { ListVisibleContractsUseCase } from '@/application/useCases/listVisibleC
 import { UpdateDebtStatusForActorUseCase } from '@/application/useCases/updateDebtStatusForActorUseCase';
 import { SetPasswordWithInviteUseCase } from '@/application/useCases/setPasswordWithInviteUseCase';
 import { ListCommunicationsForActorUseCase } from '@/application/useCases/listCommunicationsForActorUseCase';
+import { SendDebtReminderForActorUseCase } from '@/application/useCases/sendDebtReminderForActorUseCase';
 
 const hasher = new BcryptPasswordService();
 const fileReader = new PapaCsvFileReader();
-export const messagingAdapter = new ConsoleMessagingAdapter();
+export const messagingAdapter = createMessagingAdapter();
 
 function appBaseUrl() {
   return process.env.NEXTAUTH_URL?.replace(/\/$/, '') || 'http://localhost:3000';
@@ -84,4 +85,10 @@ export const setPasswordWithInviteUseCase = new SetPasswordWithInviteUseCase(
 );
 export const listCommunicationsForActorUseCase = new ListCommunicationsForActorUseCase(
   communicationRepository,
+);
+export const sendDebtReminderForActorUseCase = new SendDebtReminderForActorUseCase(
+  debtRepository,
+  communicationRepository,
+  messagingAdapter,
+  auditLogRepository,
 );

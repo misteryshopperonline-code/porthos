@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import PortfolioManager from './PortfolioManager';
+import PortfolioManager from '@/components/PortfolioManager';
 import { listVisibleContractsUseCase } from '@/composition/container';
 import { getAppSession } from '@/lib/session';
 
